@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Manwe56/competitive-programming.png)](https://travis-ci.org/Manwe56/competitive-programming)
+
 # Why this project
 
 It's been a while (2010) I race in various online programming competitions (started with google ai challenge, then mostly hackerrank and codingame) under the nickname Manwe. I am quite proud of the results: once winner, often in the top 1%, always in the top 10%. 
@@ -8,10 +10,6 @@ This project aims at sharing with the community those code I appreciate in the c
 
 Do not hesitate to contribute, to fork and issue merge requests!
 
-# status
-
-[![Build Status](https://travis-ci.org/Manwe56/competitive-programming.png)](https://travis-ci.org/Manwe56/competitive-programming)
-
 # constraints
 
 Those challenges are usually online and includes a code editor. If you are free to use another IDE, your code is usually in a single file that make you intensely use inner classes. To ease your work, there is a builder that allows you to build a single file class from a main class and will grab all its dependancies. You can now split your code accross several packages and directly build your file in a single click. It is certainly a prerequisite to share easily some code between your different challenges
@@ -20,20 +18,23 @@ Another constraint is that you usually don't have access to any third party soft
 
 # mounting the project in eclipse
 
-I use eclipse as IDE, and the project includes directly an eclipse project. It should not be difficult for you to use the code with any good editor.
+I use eclipse as IDE, and the project includes directly an eclipse project.
+You can also use maven to build project files for various IDE
 
 # how to use the builder
 
 Builder is that class in charge of building a single file from you different classes. It is located in the builder package. Have a look at the javadoc for more info
 
-# conventions
-
-//TODO
 
 # hints
 
-//TODO
+You will often find "Hint" sections in the javadoc. They are here to help you use the tools, or give you some advices you might find usefull when programming for a contest. They are not documentation as is but more ideas that can make the difference.
 
 # code layout
 
-//TODO
+The source code is in the src folder, and the tests are in the test folder.
+You will find a builder package that contains only the utilities allowing you to build your "single file" program.
+The rest of the code is in the competitive.programming package and then by theme.
+If you want to contribute, feel free to add contest independant code in the competitive.pregramming package.
+
+I would advice you create your own package by contest when using this project.
