@@ -8,6 +8,10 @@ This project aims at sharing with the community those code I appreciate in the c
 
 Do not hesitate to contribute, to fork and issue merge requests!
 
+# status
+
+[![Build Status](https://travis-ci.org/Manwe56/competitive-programming.png)](https://travis-ci.org/Manwe56/competitive-programming)
+
 # constraints
 
 Those challenges are usually online and includes a code editor. If you are free to use another IDE, your code is usually in a single file that make you intensely use inner classes. To ease your work, there is a builder that allows you to build a single file class from a main class and will grab all its dependancies. You can now split your code accross several packages and directly build your file in a single click. It is certainly a prerequisite to share easily some code between your different challenges

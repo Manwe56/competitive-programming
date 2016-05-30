@@ -121,7 +121,7 @@ public class GeneticAlgorithmTest {
         });
         algo.initialize(9);
         algo.iterate(10, 5, 20, 20, 20);
-        algo.printTo(System.err);
+        //algo.printTo(System.err);
         assertEquals(toBeFound, algo.best());
     }
 }
