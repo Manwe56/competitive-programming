@@ -2,10 +2,8 @@ package competitive.programming.graph;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,8 +29,8 @@ import java.util.Set;
  */
 public class Graph<N> {
 	
-	private final Map<N, List<N>> graph = new HashMap<>();
-	private final Map<N, Integer> nodesIndex = new HashMap<>();
+	private final N[] nodes;
+	private final List<List<Integer>> neighborsIndexes;
 
 	/**
 	 * Graph constructor
@@ -58,25 +56,25 @@ public class Graph<N> {
 	public Graph(final N[] nodes, int[] linksSource, int[] linksDestination, boolean directed) {
 		if (linksSource.length != linksDestination.length)
 			throw new IllegalStateException("Number of links source and destination provided does not match!");
+		
+		this.nodes = nodes;
+		neighborsIndexes = new ArrayList<>();
+		
 		for (int i = 0; i < nodes.length; i++) {
-			N node = nodes[i];
-			graph.put(node, new ArrayList<>());
-			nodesIndex.put(node, i);
+			neighborsIndexes.add(new ArrayList<>());
 		}
 		for (int i = 0; i < linksSource.length; i++) {
 			int sourceIndex = linksSource[i];
 			int destinationIndex = linksDestination[i];
-			N sourceNode = nodes[sourceIndex];
-			N destinationNode = nodes[destinationIndex];
-			createLink(sourceNode, destinationNode);
+			createLink(sourceIndex, destinationIndex);
 			if (!directed) {
-				createLink(destinationNode, sourceNode);
+				createLink(destinationIndex, sourceIndex);
 			}
 		}
 	}
 
-	private void createLink(N sourceNode, N destinationNode) {
-		graph.get(sourceNode).add(destinationNode);
+	private void createLink(int sourceIndex, int destinationIndex) {
+		neighborsIndexes.get(sourceIndex).add(destinationIndex);
 	}
 
 	/**
@@ -105,37 +103,33 @@ public class Graph<N> {
 	 * 		an array with the values of each node. The index in this array correspond to the index of the node given during the constructor
 	 */
 	public double[] breadthFirstSearch(double intialValue, double firstValue, IBFSTraversable<N> traversable, IDoubleBfsNextLevelValueIterator<N> nextValueIterator,
-			List<N> sources) {
-		double[] results = new double[nodesIndex.size()];
+			List<Integer> sources) {
+		double[] results = new double[nodes.length];
 		Arrays.fill(results, intialValue);
-		boolean[] alreadyScanned = new boolean[nodesIndex.size()];
+		boolean[] alreadyScanned = new boolean[nodes.length];
 		Arrays.fill(alreadyScanned, false);
-		Set<N> currentNodes = new HashSet<>(sources);
+		Set<Integer> currentNodesIndex = new HashSet<>(sources);
 
-		iterativeDoubleBreadthFirstSearch(results, alreadyScanned, currentNodes, firstValue, 0, traversable, nextValueIterator);
+		iterativeDoubleBreadthFirstSearch(results, alreadyScanned, currentNodesIndex, firstValue, 0, traversable, nextValueIterator);
 
 		return results;
 	}
 
-	private void iterativeDoubleBreadthFirstSearch(double[] results, boolean[] alreadyScanned, Set<N> currentNodes, double value, int iteration,
+	private void iterativeDoubleBreadthFirstSearch(double[] results, boolean[] alreadyScanned, Set<Integer> currentNodes, double value, int iteration,
 			IBFSTraversable<N> traversable, IDoubleBfsNextLevelValueIterator<N> nextValueIterator) {
-		Set<N> nextNodes = new HashSet<>();
+		Set<Integer> nextNodes = new HashSet<>();
 
-		for (N node : currentNodes) {
-			int index = nodesIndex.get(node);
+		for (int index : currentNodes) {
 			if (!alreadyScanned[index]) {
 				alreadyScanned[index] = true;
-				if (traversable.canBeVisited(node)) {
+				if (traversable.canBeVisited(nodes[index])) {
 					results[index] = value;
-					List<N> neighbors = graph.get(node);
-					for (N neigbor : neighbors) {
-						nextNodes.add(neigbor);
-					}
+					nextNodes.addAll(neighborsIndexes.get(index));
 				}
 			}
 		}
 
-		if (nextNodes.size() > 0) {
+		if (!nextNodes.isEmpty()) {
 			iterativeDoubleBreadthFirstSearch(results, alreadyScanned, nextNodes, nextValueIterator.nextInterationValue(value, iteration + 1), iteration + 1,
 					traversable, nextValueIterator);
 		}
@@ -153,37 +147,33 @@ public class Graph<N> {
 			IBFSTraversable<N> traversable,
 			int firstValue,
 			IIntegerBfsNextValueIterator<N> nextValueIterator,
-			List<N> sources) {
-		int[] results = new int[nodesIndex.size()];
+			List<Integer> sourcesIndex) {
+		int[] results = new int[nodes.length];
 		Arrays.fill(results, intialValue);
-		boolean[] alreadyScanned = new boolean[nodesIndex.size()];
+		boolean[] alreadyScanned = new boolean[nodes.length];
 		Arrays.fill(alreadyScanned, false);
-		Set<N> currentNodes = new HashSet<>(sources);
-
-		iterativeIntegerBreadthFirstSearch(results, alreadyScanned, currentNodes, firstValue, 0, traversable, nextValueIterator);
+		Set<Integer> currentNodesIndex = new HashSet<>(sourcesIndex);
+		
+		iterativeIntegerBreadthFirstSearch(results, alreadyScanned, currentNodesIndex, firstValue, 0, traversable, nextValueIterator);
 
 		return results;
 	}
 
-	private void iterativeIntegerBreadthFirstSearch(int[] results, boolean[] alreadyScanned, Set<N> currentNodes, int value, int iteration,
+	private void iterativeIntegerBreadthFirstSearch(int[] results, boolean[] alreadyScanned, Set<Integer> currentNodes, int value, int iteration,
 			IBFSTraversable<N> traversable, IIntegerBfsNextValueIterator<N> nextValueIterator) {
-		Set<N> nextNodes = new HashSet<>();
+		Set<Integer> nextNodes = new HashSet<>();
 
-		for (N node : currentNodes) {
-			int index = nodesIndex.get(node);
+		for (int index : currentNodes) {
 			if (!alreadyScanned[index]) {
 				alreadyScanned[index] = true;
-				if (traversable.canBeVisited(node)) {
+				if (traversable.canBeVisited(nodes[index])) {
 					results[index] = value;
-					List<N> neighbors = graph.get(node);
-					for (N neigbor : neighbors) {
-						nextNodes.add(neigbor);
-					}
+					nextNodes.addAll(neighborsIndexes.get(index));
 				}
 			}
 		}
 
-		if (nextNodes.size() > 0) {
+		if (!nextNodes.isEmpty()) {
 			iterativeIntegerBreadthFirstSearch(results, alreadyScanned, nextNodes, nextValueIterator.nextInterationValue(value, iteration + 1), iteration + 1,
 					traversable, nextValueIterator);
 		}
