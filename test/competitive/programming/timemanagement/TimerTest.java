@@ -25,8 +25,7 @@ public class TimerTest {
             // We have a random failing test here. Try to reproduce the issue
             // more frequently.
             for (int i = 0; i < 100; i++) {
-                timer.startTimer(20);
-                sleep(10);
+                timer.startTimer(2);
                 timer.timeCheck();
             }
         } catch (TimeoutException e) {
