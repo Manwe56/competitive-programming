@@ -64,6 +64,15 @@ public class Vector {
     }
 
     /**
+     * Negates this vector. The vector has the same magnitude as before, but its direction is now opposite.
+     * 
+     * @return a new vector instance with both x and y negated
+     */
+    public Vector negate() {
+        return new Vector(-x, -y);
+    }
+
+    /**
      * Return a new instance of vector rotated from the given number of degrees.
      * @param degree
      * 		the number of degrees to rotate
