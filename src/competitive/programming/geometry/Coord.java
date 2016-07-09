@@ -67,8 +67,8 @@ public class Coord {
      * @return dx*dx+dy*dy
      */
     public long distanceSquare(Coord coord) {
-        long dx = Math.abs(coord.x - x);
-        long dy = Math.abs(coord.y - y);
+        long dx = coord.x - x;
+        long dy = coord.y - y;
         return dx * dx + dy * dy;
     }
 
