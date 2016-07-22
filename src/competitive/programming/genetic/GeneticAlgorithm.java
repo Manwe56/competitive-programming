@@ -75,14 +75,15 @@ public class GeneticAlgorithm<Genotype> {
         final Map<Genotype, Double> scores = new HashMap<>();
 
         for (final Genotype candidate : candidates) {
-        	if (cachedScores.containsKey(candidate)){
-        		scores.put(candidate, cachedScores.get(candidate));
-        	}
-        	else{
-        		scores.put(candidate, fitnessFunction.evaluate(candidate));
-        	}
+            if (cachedScores.containsKey(candidate)) {
+                scores.put(candidate, cachedScores.get(candidate));
+            } else {
+                double score = fitnessFunction.evaluate(candidate);
+                scores.put(candidate, score);
+                cachedScores.put(candidate, score);
+            }
         }
-
+        
         return scores;
     }
 
