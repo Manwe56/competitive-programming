@@ -1,10 +1,10 @@
 package competitive.programming.gametheory;
 
-import competitive.programming.gametheory.IMove;
 
-public class StickMove implements IMove<StickGame> {
+public class StickMove implements ICancellableMove<StickGame> {
 
     private int sticks;
+    private StickGame previousGame;
 
     public StickMove(int sticks) {
         this.setSticks(sticks);
@@ -12,6 +12,9 @@ public class StickMove implements IMove<StickGame> {
 
     @Override
     public StickGame cancel(StickGame game) {
+        if (game.isGameStateDuplication()) {
+            return previousGame;
+        }
         game.changePlayer();
         game.setSticksRemaining(game.getSticksRemaining() + getSticks());
         log(game, "cancel ");
@@ -20,7 +23,12 @@ public class StickMove implements IMove<StickGame> {
 
     @Override
     public StickGame execute(StickGame game) {
-        game.setSticksRemaining(game.getSticksRemaining() - getSticks());
+        int sticksRemaining = game.getSticksRemaining() - getSticks();
+        if (game.isGameStateDuplication()) {
+            previousGame = game;
+            return new StickGame(1 - game.currentPlayer(), sticksRemaining, true);
+        }
+        game.setSticksRemaining(sticksRemaining);
         log(game, "execute ");
         game.changePlayer();
         return game;
@@ -31,7 +39,7 @@ public class StickMove implements IMove<StickGame> {
     }
 
     private void log(StickGame game, String action) {
-        //System.out.println("player " + game.currentPlayer() + " " + action + "move " + sticks + " : sticks remaining= " + game.getSticksRemaining());
+        // System.out.println("player " + game.currentPlayer() + " " + action + "move " + sticks + " : sticks remaining= " + game.getSticksRemaining());
     }
 
     public void setSticks(int sticks) {

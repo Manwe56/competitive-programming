@@ -1,14 +1,13 @@
 package competitive.programming.gametheory;
 
-import competitive.programming.gametheory.IGame;
-
-
 public class StickGame implements IGame {
     private int player;
     private int sticksRemaining;
+    private final boolean gameStateDuplication;
 
-    public StickGame(int currentPlayer, int sticksRemaining) {
+    public StickGame(int currentPlayer, int sticksRemaining, boolean gameStateDuplication) {
         this.player = currentPlayer;
+        this.gameStateDuplication = gameStateDuplication;
         this.setSticksRemaining(sticksRemaining);
     }
 
@@ -35,18 +34,18 @@ public class StickGame implements IGame {
     public double[] evaluate(int depth) {
         final double[] evaluation = new double[] { 0, 0 };
         if (getSticksRemaining() == 0) {
-            //Player lost.
+            // Player lost.
             assignEvaluation(evaluation, -100);
         } else {
             if (getSticksRemaining() % 4 == 1) {
-                //If the opponent plays well, he will lose
+                // If the opponent plays well, he will lose
                 assignEvaluation(evaluation, 1);
             } else {
-                //player can win, it is a valuable advantage
+                // player can win, it is a valuable advantage
                 assignEvaluation(evaluation, -1);
             }
         }
-        //System.out.println("Evaluation:" + Arrays.toString(evaluation));
+        // System.out.println("Evaluation:" + Arrays.toString(evaluation));
         return evaluation;
     }
 
@@ -56,5 +55,9 @@ public class StickGame implements IGame {
 
     public void setSticksRemaining(int sticksRemaining) {
         this.sticksRemaining = sticksRemaining;
+    }
+
+    public boolean isGameStateDuplication() {
+        return gameStateDuplication;
     }
 }

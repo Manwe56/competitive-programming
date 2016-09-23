@@ -6,8 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import competitive.programming.common.Constants;
+import competitive.programming.gametheory.ICancellableMove;
 import competitive.programming.gametheory.IGame;
-import competitive.programming.gametheory.IMove;
 import competitive.programming.gametheory.IMoveGenerator;
 import competitive.programming.timemanagement.TimeoutException;
 import competitive.programming.timemanagement.Timer;
@@ -21,13 +21,13 @@ import competitive.programming.timemanagement.Timer;
  *         It includes the alpha beta prunning optimisation in order to explore less branches.
  *         It also stores the current best "killer" move in order to explore the best branches first and enhance the pruning rate
  * @see <a href="https://en.wikipedia.org/wiki/Minimax">Minimax</a> and <a href="https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning">Alpha-beta pruning</a>
- * 
+ *
  * @param <M>
  *            The class that model a move in the game tree
  * @param <G>
  *            The class that model the Game state
  */
-public class Minimax<M extends IMove<G>, G extends IGame> {
+public class Minimax<M extends ICancellableMove<G>, G extends IGame> {
 
     private static class AlphaBetaPrunningException extends Exception {
         private static final long serialVersionUID = 4338636523317720681L;
@@ -90,10 +90,10 @@ public class Minimax<M extends IMove<G>, G extends IGame> {
 
     /**
      * Minimax constructor
-     * 
+     *
      * @param timer
-	 *            timer instance in order to cancel the search of the best move
-	 *            if we are running out of time
+     *            timer instance in order to cancel the search of the best move
+     *            if we are running out of time
      */
     public Minimax(Timer timer) {
         this.timer = timer;
@@ -154,39 +154,39 @@ public class Minimax<M extends IMove<G>, G extends IGame> {
     private MinMaxEvaluatedMove minimax(G game, IMoveGenerator<M, G> generator, int depth, double alpha, double beta, boolean player,
             MinMaxEvaluatedMove previousAnalysisBest) throws AlphaBetaPrunningException, TimeoutException {
         if (depth == 0) {
-            return new MinMaxEvaluatedMove(null, scoreFromEvaluatedGame(game.evaluate(depth), game), null);// Evaluated game status
+            return new MinMaxEvaluatedMove(null, scoreFromEvaluatedGame(game.evaluate(depth)), null);// Evaluated game status
         }
         final List<MinMaxEvaluatedMove> moves = evaluateSubPossibilities(game, generator, depth, alpha, beta, player, true, previousAnalysisBest);
-        if (moves.size() > 0) {
+        if (!moves.isEmpty()) {
             Collections.sort(moves);
             if (depth == depthmax && Constants.TRACES) {
                 System.err.println("Moves:" + moves);
             }
             return moves.get(player ? (moves.size() - 1) : 0);
         } else {
-            return new MinMaxEvaluatedMove(null, scoreFromEvaluatedGame(game.evaluate(depth), game), null);// Real end game status
+            return new MinMaxEvaluatedMove(null, scoreFromEvaluatedGame(game.evaluate(depth)), null);// Real end game status
         }
     }
 
     /**
      * Search in the game tree the best move using minimax with alpha beta pruning
-     * 
+     *
      * @param game
-	 *            The current state of the game
-	 * @param generator
-	 *            The move generator that will generate all the possible move of
-	 *            the playing player at each turn
-	 * @param depthmax
-	 *            the fixed depth up to which the game tree will be expanded
-	 * @return the best move you can play considering the other player is selecting
-	 *         the best move for him at each turn
-	 * @throws TimeoutException
+     *            The current state of the game
+     * @param generator
+     *            The move generator that will generate all the possible move of
+     *            the playing player at each turn
+     * @param depthmax
+     *            the fixed depth up to which the game tree will be expanded
+     * @return the best move you can play considering the other player is selecting
+     *         the best move for him at each turn
+     * @throws TimeoutException
      */
     public M best(final G game, final IMoveGenerator<M, G> generator, int depthmax) throws TimeoutException {
         try {
             this.depthmax = depthmax;
-            final MinMaxEvaluatedMove best = minimax(game, generator, depthmax, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
-                    game.currentPlayer() == 0, killer);
+            final MinMaxEvaluatedMove best = minimax(game, generator, depthmax, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, game.currentPlayer() == 0,
+                    killer);
             killer = best;
             return best.getMove();
         } catch (final AlphaBetaPrunningException e) {
@@ -195,7 +195,7 @@ public class Minimax<M extends IMove<G>, G extends IGame> {
         }
     }
 
-    private double scoreFromEvaluatedGame(double[] scores, G game) {
+    private double scoreFromEvaluatedGame(double[] scores) {
         return scores[0] - scores[1];
     }
 }
