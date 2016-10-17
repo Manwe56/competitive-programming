@@ -35,6 +35,7 @@ public class GeneticAlgorithm<Genotype> {
     private final List<Genotype> candidates = new ArrayList<>();
 
     private IShuffler<Genotype> shuffler = (c) -> Collections.shuffle(c);
+	private int evaluations;
 
     /**
      * Constructor
@@ -79,6 +80,7 @@ public class GeneticAlgorithm<Genotype> {
                 scores.put(candidate, cachedScores.get(candidate));
             } else {
                 double score = fitnessFunction.evaluate(candidate);
+                evaluations++;
                 scores.put(candidate, score);
                 cachedScores.put(candidate, score);
             }
@@ -199,5 +201,9 @@ public class GeneticAlgorithm<Genotype> {
 	 */
 	public void addReference(Genotype reference) {
 		candidates.add(reference);
+	}
+
+	public int getEvaluations() {
+		return evaluations;
 	}
 }
