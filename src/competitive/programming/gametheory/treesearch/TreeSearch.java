@@ -3,7 +3,9 @@ package competitive.programming.gametheory.treesearch;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 
 import competitive.programming.gametheory.IGame;
@@ -44,47 +46,69 @@ import competitive.programming.timemanagement.Timer;
  * @param <G>
  *            The class that model the Game state
  */
-
 public class TreeSearch<M extends IMove<G>, G extends IGame> {
     private final Timer timer;
     private final double depthPenaltyFactor;
     private final TreeNodeSorter<M, G> sorter;
     private final TreeSet<TreeSearchNode<M, G>> toBeExpanded;
-    private int evaluationsPerformed;
+	private int evaluationsPerformed;
     private int evaluationsMax = 0;
     private List<TreeSearchNode<M, G>> rootNodes;
     private TreeSearchNode<M, G> best;
 
-    private static class TreeSearchNode<M, G extends IGame> extends TreeNode<M, G> {
-        private final TreeSearchNode<M, G> father;
+    static class TreeSearchNode<M, G extends IGame> extends TreeNode<M, G> {
+        private TreeSearchNode<M, G> father;
         private double[] subTreeValue;
-        private final double evaluationFactor;
+        private final double depthPenaltyFactor;
+        double eval;
         private List<TreeSearchNode<M, G>> subNodes;
 
-        public TreeSearchNode(double[] evaluation, M move, G game, int depth, TreeSearchNode<M, G> father, double depthPenaltyFactor) {
+        public TreeSearchNode(double[] evaluation, M move, G game, int depth, TreeSearchNode<M, G> father, double depthPenaltyFactor, double eval) {
             super(evaluation, move, game, depth);
             this.father = father;
+            this.depthPenaltyFactor = depthPenaltyFactor;
             subTreeValue = evaluation;
-            evaluationFactor = Math.pow(depthPenaltyFactor, depth);
+            this.eval = eval*Math.pow(depthPenaltyFactor, depth);
         }
 
         @Override
         public String toString() {
-            return "TreeSearchNode{eval:" + Arrays.toString(subTreeValue) + ",Move=" + getMove().toString() + ", depth=" + getDepth() + "}";
+            return "TreeSearchNode{subTree:" + Arrays.toString(subTreeValue)+ ",Evaluation="+Arrays.toString(getEvaluation()) +",Eval:"+eval+",Player:"+ getGame().currentPlayer()+ ",Move=" + getMove().toString() + ", depth=" + getDepth() + "}";
         }
 
-        public void backPropagate(double[] subNodeValue, TreeNodeSorter<M, G> sorter) {
-            if (sorter.isBetter(subNodeValue, 1.0, getGame().currentPlayer(), subTreeValue, 1.0, getGame().currentPlayer())) {
+        public void backPropagate(double[] subNodeValue, TreeNodeSorter<M, G> sorter, boolean backPropagateToFather) {
+            if (subTreeValue==null || sorter.isBetter(subNodeValue, 1.0, getGame().currentPlayer(), subTreeValue, 1.0, getGame().currentPlayer())) {
                 subTreeValue = subNodeValue;
-                if (father != null) {
-                    father.backPropagate(subNodeValue, sorter);
+                if (father != null && backPropagateToFather) {
+                    father.backPropagate(subNodeValue, sorter, backPropagateToFather);
                 }
             }
         }
+        
+        @Override 
+        public void decrementDepth() {
+        	super.decrementDepth();
+        	eval *= Math.pow(depthPenaltyFactor, getDepth())/Math.pow(depthPenaltyFactor, getDepth()+1);
+        };
 
         public void setSubNodes(List<TreeSearchNode<M, G>> subNodes) {
             this.subNodes = subNodes;
         }
+
+		public void resetEvaluation(TreeNodeSorter<M, G> sorter) {
+			boolean resetFather = false;
+			
+			if (father!=null && Arrays.equals(father.subTreeValue, subTreeValue)){
+				resetFather = true;
+			}
+			subTreeValue = null;
+			for (TreeSearchNode<M,G> subNode : subNodes){
+				backPropagate(subNode.subTreeValue, sorter, !resetFather);
+			}
+			if (resetFather){
+				father.resetEvaluation(sorter);
+			}
+		}
     }
 
     /**
@@ -106,43 +130,7 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
         this.timer = timer;
         this.depthPenaltyFactor = depthPenaltyFactor;
         this.sorter = new TreeNodeSorter<>(converter);
-        this.toBeExpanded = new TreeSet<>((o1, o2) -> {
-            if (o2 == o1) {
-                return 0;
-            }
-            int comparison = sorter.compare(o1.getEvaluation(), o1.evaluationFactor, o1.getGame().currentPlayer(), o2.getEvaluation(), o2.evaluationFactor, o2
-                    .getGame().currentPlayer());
-            if (comparison == 0) {
-                int o1hash = System.identityHashCode(o1);
-                int o2hash = System.identityHashCode(o2);
-                return o1hash - o2hash;
-            }
-            return comparison;
-        });
-    }
-
-    private List<TreeSearchNode<M, G>> expansion(TreeSearchNode<M, G> toExpand, IMoveGenerator<M, G> generator) throws TimeoutException {
-        int depth = toExpand.getDepth();
-        G game = toExpand.getGame();
-        List<TreeSearchNode<M, G>> subNodes = new ArrayList<>();
-        List<M> moves = generator.generateMoves(game);
-        for (M move : moves) {
-            subNodes.add(evaluate(move.execute(game), move, depth + 1, toExpand));
-        }
-        toBeExpanded.addAll(subNodes);
-        return subNodes;
-    }
-
-    private TreeSearchNode<M, G> evaluate(G newNodeState, M move, int depth, TreeSearchNode<M, G> father) throws TimeoutException {
-        evaluationsPerformed++;
-        if (father != null && newNodeState == father.getGame()) {
-            throw new IllegalArgumentException(
-                    "Your game state is not duplicated! Tree search require to duplicate the game state since it will explore the tree incrementally");
-        }
-        if (evaluationsMax > 0 && evaluationsPerformed > evaluationsMax) {
-            throw new TimeoutException();
-        }
-        return new TreeSearchNode<>(newNodeState.evaluate(depth), move, newNodeState, depth, father, depthPenaltyFactor);
+        this.toBeExpanded = createToBeExpanded();
     }
 
     /**
@@ -160,36 +148,32 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
         evaluationsPerformed = 0;
         rootNodes = new ArrayList<>();
         try {
-            TreeSearchNode<M, G> root = new TreeSearchNode<>(game.evaluate(0), null, game, 0, null, depthPenaltyFactor);
+        	double[] eval = game.evaluate(0);
+            TreeSearchNode<M, G> root = new TreeSearchNode<>(eval, null, game, 0, null, depthPenaltyFactor, sorter.converter.convert(eval, game.currentPlayer()));
             rootNodes = expansion(root, generator);
             root.setSubNodes(rootNodes);
-            while (!toBeExpanded.isEmpty()) {
-                timer.timeCheck();
-                TreeSearchNode<M, G> toExpand = selection();
-                List<TreeSearchNode<M, G>> expandeds = expansion(toExpand, generator);
-                toBeExpanded.remove(toExpand);
-                toExpand.setSubNodes(expandeds);
-                for (TreeSearchNode<M, G> expanded : expandeds) {
-                    toExpand.backPropagate(expanded.getEvaluation(), sorter);
-                }
-            }
+            treeSearchLoop(generator);
         } catch (TimeoutException e) {
             // Times up!
         }
 
-        best = rootNodes.get(0);
-        for (TreeSearchNode<M, G> node : rootNodes) {
-            if (sorter.isBetter(node.subTreeValue, 1.0, game.currentPlayer(), best.subTreeValue, 1.0, game.currentPlayer())) {
-                best = node;
-            }
-        }
-
-        if (best == null) {
-            return null;
-        }
-        return best.getMove();
+        return returnCurrentBest(game.currentPlayer());
     }
 
+	/**
+	 * For testing purpose
+	 * */
+    public Set<TreeSearchNode<M, G>> getToBeExpanded() {
+		return toBeExpanded;
+	}
+    
+    /**
+     * Print the entire tree representation to the PrintStream.
+     * 
+     * Particularly useful to understand why the best move has been chosen
+     * @param out
+     * 		  A print stream such as System.err for example
+     */
     public void print(PrintStream out) {
         if (rootNodes != null) {
             for (TreeSearchNode<M, G> node : rootNodes) {
@@ -198,7 +182,186 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
         }
     }
 
-    private void printNode(TreeSearchNode<M, G> node, PrintStream out) {
+    /**
+     * @return the best game state corresponding to the best move returned by
+     *         best method It is mandatory to run best method first!
+     */
+    public G bestGame() {
+        if (best == null)
+            return null;
+        return best.getGame();
+    }
+
+    
+    /**
+     * @param evaluationsMax limit the number of node to evaluate.
+     * 
+     * This is nice for testing because you don't want to rely on your computer performances
+     */
+    public void setEvaluationsMax(int evaluationsMax) {
+        this.evaluationsMax = evaluationsMax;
+    }
+
+    /**
+     * @return the total count of evaluations performed. Useful for performances stats :)
+     */
+    public int evaluations() {
+        return evaluationsPerformed;
+    }
+
+	/**
+	 * Prun the tree of all the nodes that are not under the selected executedMove.
+	 * Use this when you want to keep a part of the tree between several iterations.
+	 * Then call continueBest in order to find the next interesting move.
+	 * 
+	 * @param executedMove 
+	 *        The move that will be your new root of the tree. All the other subtrees will be removed
+	 * @param generator  
+	 *        The move generator
+	 */
+	public void prun(M executedMove, IMoveGenerator<M, G> generator) {
+		TreeSearchNode<M,G> newRoot = null;
+		
+		for (TreeSearchNode<M,G> rootNode: rootNodes){
+			if (rootNode.getMove()==executedMove){
+				newRoot = rootNode;
+			}
+		}
+		toBeExpanded.clear();
+		best = null;
+		evaluationsPerformed=0;
+		rootNodes = newRoot.subNodes;
+		newRoot.father = null;
+		if (rootNodes==null){
+			try {
+				rootNodes = expansion(newRoot, generator);
+			} catch (TimeoutException e) {
+			}
+		}
+		for (TreeSearchNode<M,G> rootNode: rootNodes){
+			repushToBeExpandedNodes(rootNode);
+		}
+	}
+	
+	/**
+	 * Continue the exploration of a game tree in order to find the best move possible until we reach the timeout.
+     * @param generator
+     *            The move generator that will generate all the possible move of
+     *            the playing player at each turn
+     * @return the best move you can play considering all players are selecting
+     *         the best move for them
+     * @throws TimeoutException
+     */
+    public M continueBest(IMoveGenerator<M, G> generator) {
+		evaluationsPerformed=0;
+		try {
+			treeSearchLoop(generator);
+		} catch (TimeoutException e) {
+			//Time out
+		}
+		return returnCurrentBest(rootNodes.get(0).father.getGame().currentPlayer());
+	}
+
+    
+	/**
+	 * @return the double [] of the best evaluation so far.
+	 */
+	public double[] bestEval() {
+		return best.subTreeValue;
+	}
+
+	private TreeSet<TreeSearchNode<M, G>> createToBeExpanded() {
+		return new TreeSet<>(new Comparator<TreeSearchNode<M, G>>() {
+			@Override
+			public int compare(TreeSearchNode<M, G> o1, TreeSearchNode<M, G> o2) {
+			    if (o2 == o1) {
+			        return 0;
+			    }
+			    double diff = o1.eval-o2.eval;
+			    if (diff < 0) {
+		            return 1;
+		        }
+		        if (diff > 0) {
+		            return -1;
+		        }
+		        int o1hash = System.identityHashCode(o1);
+		        int o2hash = System.identityHashCode(o2);
+		        return o1hash - o2hash;
+			}
+		});
+	}
+
+    private List<TreeSearchNode<M, G>> expansion(TreeSearchNode<M, G> toExpand, IMoveGenerator<M, G> generator) throws TimeoutException {
+        int depth = toExpand.getDepth();
+        G game = toExpand.getGame();
+        List<TreeSearchNode<M, G>> subNodes = new ArrayList<>();
+        List<M> moves = generator.generateMoves(game);
+        for (M move : moves) {
+            TreeSearchNode<M, G> node = evaluate(move.execute(game), move, depth + 1, toExpand);
+			subNodes.add(node);
+			pushInToBeExpanded(node);	
+        }
+        
+        return subNodes;
+    }
+
+	private void pushInToBeExpanded(TreeSearchNode<M, G> node) {
+		toBeExpanded.add(node);		
+	}
+
+    private TreeSearchNode<M, G> evaluate(G newNodeState, M move, int depth, TreeSearchNode<M, G> father) throws TimeoutException {
+        evaluationsPerformed++;
+        if (father != null && newNodeState == father.getGame()) {
+            throw new IllegalArgumentException(
+                    "Your game state is not duplicated! Tree search require to duplicate the game state since it will explore the tree incrementally");
+        }
+        if (evaluationsMax > 0 && evaluationsPerformed > evaluationsMax) {
+            throw new TimeoutException();
+        }
+        double[] eval = newNodeState.evaluate(depth);
+        return new TreeSearchNode<>(eval, move, newNodeState, depth, father, depthPenaltyFactor, sorter.converter.convert(eval, newNodeState.currentPlayer()));
+    }
+
+	private void treeSearchLoop(final IMoveGenerator<M, G> generator) throws TimeoutException {
+		while (!toBeExpanded.isEmpty()) {
+		    timer.timeCheck();
+		    TreeSearchNode<M, G> toExpand = selection();
+		    List<TreeSearchNode<M, G>> expandeds = expansion(toExpand, generator);
+		    toBeExpanded.remove(toExpand);
+		    
+		    toExpand.setSubNodes(expandeds);
+		    if (!expandeds.isEmpty()){
+		    	toExpand.resetEvaluation(sorter);
+		    }
+		}
+	}
+
+	private M returnCurrentBest(int currentPlayer) {
+		if (rootNodes.isEmpty())
+			return null;
+		best = rootNodes.get(0);
+        for (TreeSearchNode<M, G> node : rootNodes) {
+            if (sorter.isBetter(node.subTreeValue, 1.0, currentPlayer, best.subTreeValue, 1.0, currentPlayer)) {
+                best = node;
+            }
+        }
+
+        return best.getMove();
+	}
+
+	private void repushToBeExpandedNodes(TreeSearchNode<M, G> node) {
+		node.decrementDepth();
+		if (node.subNodes!=null){
+			for (TreeSearchNode<M, G> subNode: node.subNodes){
+				repushToBeExpandedNodes(subNode);
+			}
+		}
+		else{
+			pushInToBeExpanded(node);
+		}
+	}
+
+	private void printNode(TreeSearchNode<M, G> node, PrintStream out) {
         for (int i = 0; i < node.getDepth(); i++) {
             out.print("\t");
         }
@@ -212,24 +375,5 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
         return toBeExpanded.first();
     }
 
-    /**
-     * @return the best game state corresponding to the best move returned by
-     *         best method It is mandatory to run best method first!
-     */
-    public G bestGame() {
-        if (best == null)
-            return null;
-        return best.getGame();
-    }
 
-    public void setEvaluationsMax(int evaluationsMax) {
-        this.evaluationsMax = evaluationsMax;
-    }
-
-    /**
-     * @return the total count of evaluations performed. Useful for performances stats :)
-     */
-    public int evaluations() {
-        return evaluationsPerformed;
-    }
 }

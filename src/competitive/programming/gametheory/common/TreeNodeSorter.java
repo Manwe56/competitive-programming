@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TreeNodeSorter<M, G> {
-    private final IScoreConverter converter;
+    public final IScoreConverter converter;
 
     public TreeNodeSorter(IScoreConverter converter) {
         this.converter = converter;

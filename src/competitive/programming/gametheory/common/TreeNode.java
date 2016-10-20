@@ -6,7 +6,7 @@ public class TreeNode<M, G> {
     private final double[] evaluation;
     private final M move;
     private final G game;
-    private final int depth;
+    private int depth;
 
     public TreeNode(double[] evaluation, M move, G game, int depth) {
         this.evaluation = evaluation;
@@ -14,6 +14,10 @@ public class TreeNode<M, G> {
         this.game = game;
         this.depth = depth;
     }
+
+	public void decrementDepth() {
+		depth--;
+	}
 
     public int getDepth() {
         return depth;

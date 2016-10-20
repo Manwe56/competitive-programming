@@ -30,9 +30,6 @@ public class Tester {
                         final int sticksExpected = (sticks - 1) % 4;
 
                         if (sticksExpected != 0) {// There is no solution where we can win and algo can return any move...
-                            if (sticksExpected != move.getSticks()) {
-                                System.out.println("paf");
-                            }
                             assertEquals(sticksExpected, move.getSticks());
                         }
                         assertEquals(sticks, game.getSticksRemaining());// ensure algo is restoring correctly game state
