@@ -19,16 +19,18 @@ import java.util.Set;
  * of your code, reading the imported classes, parse them and build your file
  * containing all your imported classes as private classes in a unique file in
  * the default package
- * 
- * Usage:
- * 	Run the main of this class and pass as argument the path of the file where you have your main.
- * 
+ *
+ * Usage: Run the main of this class and pass as argument the path of the file
+ * where you have your main.
+ *
  * Example path : /src/builder/sample/Sample.java
  *
  * @author Manwe
  *
  */
 public class FileBuilder {
+    private static final String SRC_ROOT_JAVA = "src/main/java/";
+
     private static class ClassCode {
         private final String classFile;
 
@@ -152,7 +154,7 @@ public class FileBuilder {
     private String importToPath(String importStr) {
         final String className = importStr.substring(7).replaceAll(";", "");
 
-        return toAbsolutePath("src/" + className.replaceAll("\\.", "/") + ".java");
+        return toAbsolutePath(SRC_ROOT_JAVA + className.replaceAll("\\.", "/") + ".java");
     }
 
     private ClassCode processFile(String fileName) {
@@ -232,7 +234,7 @@ public class FileBuilder {
     }
 
     private void write(ClassCode treated) {
-        final String outputFile = "src/" + treated.className() + ".java";
+        final String outputFile = SRC_ROOT_JAVA + treated.className() + ".java";
 
         final List<String> lines = new ArrayList<>();
         lines.addAll(imports);
