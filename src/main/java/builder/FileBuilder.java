@@ -7,8 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,9 +16,9 @@ import java.util.Set;
 /**
  * In some contests you will have to submit all your code in a single file. This
  * class is here to help you build this unique file by scanning the base class
- * of your code, reading the imported classes, parse them and build your file
- * containing all your imported classes as private classes in a unique file in
- * the default package
+ * of your code, reading the imported/included classes, parse them and build
+ * your file containing all your imported/included classes as private classes
+ * (for java) in a unique file in the root directory
  *
  * Usage: Run the main of this class and pass as argument the path of the file
  * where you have your main.
@@ -29,7 +29,20 @@ import java.util.Set;
  *
  */
 public class FileBuilder {
+    private static final String INCLUDE = "#include ";
+    private static final String IMPORT = "import ";
     private static final String SRC_ROOT_JAVA = "src/main/java/";
+    private static final String SRC_ROOT_CPP_HEADERS = "src/competitiveProgramming/headers/";
+    private static final String END_COMMENT = "*/";
+
+    private static final Charset CHARSET = Charset.forName("UTF-8");
+    private final Set<String> imports = new HashSet<>();
+
+    private final Set<String> knownFiles = new HashSet<>();
+
+    private final Map<String, ClassCode> innerClasses = new LinkedHashMap<>();
+    private final boolean javaCode;
+    private final String sourceRoot;
 
     private static class ClassCode {
         private final String classFile;
@@ -96,28 +109,26 @@ public class FileBuilder {
         if (args.length != 1) {
             System.err.println("Unexpected number of arguments");
         } else {
-            final FileBuilder builder = new FileBuilder();
-            final ClassCode treated = builder.processFile(args[0]);
+            String fileName = args[0];
+            final FileBuilder builder = new FileBuilder(fileName.endsWith(".java"));
+            final ClassCode treated = builder.processFile(fileName);
             builder.write(treated);
         }
     }
 
-    private static final String END_COMMENT = "*/";
-
-    private static final Charset CHARSET = Charset.forName("UTF-8");
-    private final Set<String> imports = new HashSet<>();
-
-    private final Set<String> knownFiles = new HashSet<>();
-
-    private final Map<String, ClassCode> innerClasses = new HashMap<>();
-
-    private FileBuilder() {
+    private FileBuilder(boolean javaCode) {
+        this.javaCode = javaCode;
+        if (javaCode) {
+            sourceRoot = SRC_ROOT_JAVA;
+        } else {
+            sourceRoot = SRC_ROOT_CPP_HEADERS;
+        }
     }
 
     private boolean addLineToCode(final ClassCode code, boolean fileKeyWordRead, final String line) {
         if (line.startsWith("package ")) {
             // Do nothing, we'll remove the package info
-        } else if (line.startsWith("import ")) {
+        } else if (line.startsWith(IMPORT)) {
             final String importedClassPath = importToPath(line);
             if (!knownFiles.contains(importedClassPath)) {
                 if (Files.exists(Paths.get(toAbsolutePath(importedClassPath)))) {
@@ -127,34 +138,53 @@ public class FileBuilder {
                     imports.add(line);
                 }
             }
+        } else if (line.startsWith(INCLUDE)) {
+            final String importedClassPath = includeToPath(line);
+            if (!knownFiles.contains(importedClassPath)) {
+                if (Files.exists(Paths.get(toAbsolutePath(importedClassPath)))) {
+                    innerClasses.put(importedClassPath, processFile(importedClassPath));
+                } else {
+                    System.out.println("Standard include:" + line);
+                    code.afterClassContent.add(line);
+                }
+            }
         } else {
             if (fileKeyWordRead) {
                 code.afterClassContent.add(line);
             } else {
-                if (line.contains("abstract class ")) {
-                    code.declaration(line, "abstract class ");
-                    fileKeyWordRead = true;
-                } else if (line.contains("class ")) {
-                    code.declaration(line, "class ");
-                    fileKeyWordRead = true;
-                } else if (line.contains("interface ")) {
-                    code.declaration(line, "interface ");
-                    fileKeyWordRead = true;
-                } else if (line.contains("enum ")) {
-                    code.declaration(line, "enum ");
-                    fileKeyWordRead = true;
+                if (javaCode) {
+                    if (line.contains("abstract class ")) {
+                        code.declaration(line, "abstract class ");
+                        fileKeyWordRead = true;
+                    } else if (line.contains("class ")) {
+                        code.declaration(line, "class ");
+                        fileKeyWordRead = true;
+                    } else if (line.contains("interface ")) {
+                        code.declaration(line, "interface ");
+                        fileKeyWordRead = true;
+                    } else if (line.contains("enum ")) {
+                        code.declaration(line, "enum ");
+                        fileKeyWordRead = true;
+                    } else {
+                        code.beforeClassContent.add(line);
+                    }
                 } else {
-                    code.beforeClassContent.add(line);
+                    code.afterClassContent.add(line);
                 }
             }
         }
         return fileKeyWordRead;
     }
 
-    private String importToPath(String importStr) {
-        final String className = importStr.substring(7).replaceAll(";", "");
+    private String includeToPath(String includeStr) {
+        final String includeFileName = includeStr.substring(INCLUDE.length()).replaceAll("\"", "").replaceAll("<", "").replaceAll(">", "");
+        return toAbsolutePath(sourceRoot + includeFileName);
+    }
 
-        return toAbsolutePath(SRC_ROOT_JAVA + className.replaceAll("\\.", "/") + ".java");
+    private String importToPath(String importStr) {
+        final String className = importStr.substring(IMPORT.length()).replaceAll(";", "");
+
+        return toAbsolutePath(sourceRoot + className.replaceAll("\\.", "/") + ".java");
     }
 
     private ClassCode processFile(String fileName) {
@@ -162,7 +192,10 @@ public class FileBuilder {
         knownFiles.add(toAbsolutePath(fileName));
         final List<String> fileContent = readFile(fileName);
         final ClassCode code = readFileContent(fileName, fileContent);
-        readPackageClasses(fileName);
+        if (javaCode) {
+            readPackageClasses(fileName);
+        }
+
         return code;
     }
 
@@ -234,23 +267,39 @@ public class FileBuilder {
     }
 
     private void write(ClassCode treated) {
-        final String outputFile = SRC_ROOT_JAVA + treated.className() + ".java";
+        String className = treated.className();
+        if (className == null || className.isEmpty()) {
+            className = "Out";
+        }
+        final String outputFile = sourceRoot + className + (javaCode ? ".java" : ".cpp");
 
         final List<String> lines = new ArrayList<>();
         lines.addAll(imports);
         for (final String line : treated.beforeClassContent) {
             lines.add(line);
         }
-        lines.add("class " + treated.className() + " {");
-        for (final ClassCode innerClass : innerClasses.values()) {
-            for (final String line : innerClass.beforeClassContent) {
-                lines.add("\t" + line);
+        if (javaCode) {
+            lines.add("class " + treated.className() + " {");
+            for (final ClassCode innerClass : innerClasses.values()) {
+                for (final String line : innerClass.beforeClassContent) {
+                    lines.add("\t" + line);
+                }
+                lines.add("\tprivate static " + innerClass.declaration() + " {");
+                for (final String line : innerClass.afterClassContent) {
+                    lines.add("\t" + line);
+                }
             }
-            lines.add("\tprivate static " + innerClass.declaration() + " {");
-            for (final String line : innerClass.afterClassContent) {
-                lines.add("\t" + line);
+        } else {
+            for (final ClassCode innerClass : innerClasses.values()) {
+                for (final String line : innerClass.beforeClassContent) {
+                    lines.add("\t" + line);
+                }
+                for (final String line : innerClass.afterClassContent) {
+                    lines.add("\t" + line);
+                }
             }
         }
+
         for (final String line : treated.afterClassContent) {
             lines.add(line);
         }
