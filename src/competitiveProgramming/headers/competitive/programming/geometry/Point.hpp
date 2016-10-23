@@ -1,6 +1,13 @@
 #ifndef _GEOMETRY_POINT_INCLUDED
 #define _GEOMETRY_POINT_INCLUDED
 
+/**
+* @author Manwe
+*
+* Class representing a Point (x,y)
+*
+*/
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
@@ -9,12 +16,6 @@ namespace competitive{
 namespace programming{
 namespace geometry{
 
-/**
- * @author Manwe
- * 
- * Class representing a Point (x,y)
- *
- */
 template <typename T>
 class Point {
 private:
