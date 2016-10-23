@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Manwe56/competitive-programming.png)](https://travis-ci.org/Manwe56/competitive-programming)
+[![Build Status](https://travis-ci.org/Manwe56/competitive-programming.svg?branch=master)](https://travis-ci.org/Manwe56/competitive-programming)
 
 # Why this project
 
