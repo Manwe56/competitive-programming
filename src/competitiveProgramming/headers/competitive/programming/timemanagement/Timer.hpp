@@ -73,7 +73,7 @@ namespace competitive {
 				bool m_started;
 			};
 
-			std::ostream& operator<<(std::ostream &os, const Timer& timer)
+			inline std::ostream& operator<<(std::ostream &os, const Timer& timer)
 			{
 				os << "Time taken: " << timer.currentTimeTakenInNanoSeconds().count() << "ns";
 				return os;

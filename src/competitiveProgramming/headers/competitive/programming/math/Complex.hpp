@@ -46,7 +46,7 @@ namespace competitive {
 				double m_imaginary;
 			};
 
-			std::ostream& operator<<(std::ostream &os, const Complex& complex)
+			inline std::ostream& operator<<(std::ostream &os, const Complex& complex)
 			{
 				os << "C[" << complex.getReal() << ", " << complex.getImaginary() << "i]";
 				return os;
