@@ -23,9 +23,7 @@ import java.util.Set;
  *         the node is by index
  *
  * @param <N>
- *            The class representing a node in the graph. HashCode and equals
- *            should be implemented correctly since Nodes will be placed in
- *            HashMaps
+ *            The class representing a node in the graph. 
  */
 public class Graph<N> {
 	
