@@ -1,0 +1,111 @@
+apply plugin: 'java'
+apply plugin: 'cpp'
+apply plugin: 'maven'
+apply plugin: 'eclipse'
+apply plugin: 'google-test-test-suite'
+apply plugin: "visual-studio"
+
+group = 'competitive-programming'
+version = '0.0.1-SNAPSHOT'
+
+description = """Competitive programming"""
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+     maven { url "http://repo.maven.apache.org/maven2" }
+}
+dependencies {
+    testCompile group: 'junit', name: 'junit', version:'4.11'
+}
+
+model {
+
+    toolChains {
+        gcc(Gcc) {
+            eachPlatform { tools ->
+                tools.cppCompiler.executable = "g++-5"
+            }
+        }
+        visualcpp(VisualCpp) {
+            
+        }
+        
+    }
+    platforms {
+        x86 {
+            architecture "x86"
+        }
+    }
+    repositories {
+        libs(PrebuiltLibraries) {
+            googleTest {
+                headers.srcDir "libs/googleTest/1.7.0/include"
+                binaries.withType(StaticLibraryBinary) {
+                    staticLibraryFile =
+                        file("libs/googleTest/1.7.0/lib/" +
+                             findGoogleTestCoreLibForPlatform(targetPlatform))
+                }
+            }
+        }
+    }
+    components {
+        competitiveProgramming(NativeLibrarySpec) {
+            targetPlatform "x86"
+        }
+    }
+    testSuites {
+        competitiveProgrammingTest(GoogleTestTestSuiteSpec) {
+            testing $.components.competitiveProgramming
+        }
+    }
+    binaries {
+        all {
+            if (toolChain in VisualCpp) {
+                linker.args "/DEBUG"
+                linker.args "-Z7"
+                cppCompiler.args "/DEBUG"
+                cppCompiler.args "-Z7"
+                cppCompiler.args "-IC:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10240.0\\ucrt"
+                linker.args "/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.10240.0\\ucrt\\x86"
+            }
+        }
+        withType(GoogleTestTestSuiteBinarySpec) {
+            lib library: "googleTest", linkage: "static"
+
+            if (targetPlatform.operatingSystem.linux) {
+                cppCompiler.args '-pthread'
+                cppCompiler.args '-std=c++11'
+                linker.args '-std=c++11'
+                linker.args '-pthread'
+            }
+        }
+    }
+    visualStudio {
+        solutions.all {
+            solutionFile.location = "vs/${name}.sln"
+            solutionFile.withContent { TextProvider content ->
+                content.asBuilder().insert(0, "# GENERATED FILE: DO NOT EDIT\n")
+                content.text = content.text.replaceAll("HideSolutionNode = FALSE", "HideSolutionNode = TRUE")
+            }
+        }
+    }
+}
+tasks.withType(RunTestExecutable) {
+    args "--gtest_output=xml:test_detail.xml"
+}
+
+def findGoogleTestCoreLibForPlatform(Platform platform) {
+    if (platform.operatingSystem.windows) {
+        return "vs2015/gtest.lib"
+//        return "vs2013/gtest.lib"
+//        return "vs2013/gtest-core.lib"
+//        return "cygwin/gtest-core.lib"
+//        return "mingw/gtest-core.lib"
+    } else if (platform.operatingSystem.macOsX) {
+        return "osx/libgtest.a"
+    } else {
+        return "linux/libgtest.a"
+    }
+}
