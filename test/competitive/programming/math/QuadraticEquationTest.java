@@ -15,7 +15,7 @@ public class QuadraticEquationTest {
 	public void testRealSolutions() {
 		assertEquals(Arrays.asList(new Complex(1,0)), QuadraticEquation.solve(1, -2, 1));
 		assertEquals(Arrays.asList(new Complex(-2,0)), QuadraticEquation.solve(0, 1, 2));
-		//(x-2)*(x-1)=x²-3x+2
+		//(x-2)*(x-1)=x*x-3x+2
 		assertEquals(Arrays.asList(new Complex(1,0), new Complex(2,0)), QuadraticEquation.solve(1, -3, 2));
 		assertEquals(Arrays.asList(new Complex(1,0), new Complex(2,0)), QuadraticEquation.solve(-1, 3, -2));
 	}
