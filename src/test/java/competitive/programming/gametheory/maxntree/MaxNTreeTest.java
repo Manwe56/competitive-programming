@@ -14,7 +14,6 @@ public class MaxNTreeTest {
         final Timer timer = new Timer();
         final MaxNTree<StickMove, StickGame> maxNTree = new MaxNTree<StickMove, StickGame>(timer, (rawScores, player) -> rawScores[player]);
 
-        Tester.testAlgo((game, generator, maxdepth) -> maxNTree.best(game, generator, maxdepth), false);
+        Tester.testAlgo((game, generator, maxdepth) -> maxNTree.best(game, generator, 0, maxdepth), false);
     }
-
 }

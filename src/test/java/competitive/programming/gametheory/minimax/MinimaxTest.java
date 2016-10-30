@@ -13,6 +13,6 @@ public class MinimaxTest {
         final Timer timer = new Timer();
         final Minimax<StickMove, StickGame> minimax = new Minimax<StickMove, StickGame>(timer);
 
-        Tester.testAlgo((game, generator, maxdepth) -> minimax.best(game, generator, maxdepth), false);
+        Tester.testAlgo((game, generator, maxdepth) -> minimax.best(game, generator, 0, maxdepth), false);
     }
 }

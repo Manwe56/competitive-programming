@@ -65,20 +65,33 @@ public class MaxNTree<M extends ICancellableMove<G>, G extends IGame> {
     }
 
     /**
+     * Explore the game tree incrementally from the depthStart to depthMax.
+     * At each depth, update the new best move at this depth. If a time out occurs during the exploration, return the best result of previous depth
+     * 
      * @param game
      *            The current state of the game
      * @param generator
      *            The move generator that will generate all the possible move of
      *            the playing player at each turn
-     * @param depth
-     *            the fixed depth up to which the game tree will be expanded
+     * @param depthStart
+     *            the start depth up to which the game tree will be expanded
+     * @param depthMax
+     *            the maximum depth up to which the game tree will be expanded
      * @return the best move you can play considering all players are selecting
      *         the best move for them
-     * @throws TimeoutException
      */
-    public M best(G game, IMoveGenerator<M, G> generator, int depth) throws TimeoutException {
+    public M best(G game, IMoveGenerator<M, G> generator, int depthStart, int depthMax) {
         this.generator = generator;
-        best = bestInternal(depth, game);
+        try {
+        	for (int depth=depthStart; depth<depthMax; depth++){
+                best = bestInternal(depth, game);
+            }
+		} catch (TimeoutException e) {
+			//Expected, we just reach a timeout.
+		}
+        
+        if (best==null)
+        	return null;
         return best.getMove();
     }
 

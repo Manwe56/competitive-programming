@@ -170,29 +170,42 @@ public class Minimax<M extends ICancellableMove<G>, G extends IGame> {
 
     /**
      * Search in the game tree the best move using minimax with alpha beta pruning
+     * Search will start at depthMin and increment up to depthMax until a timeout is reached.
+     * Thanks to the previous depth search, it first tries to replay the best found move so far so it
+     * take maximum advantage of the pruning
      *
      * @param game
      *            The current state of the game
      * @param generator
      *            The move generator that will generate all the possible move of
      *            the playing player at each turn
-     * @param depthmax
-     *            the fixed depth up to which the game tree will be expanded
+     * @param depthStart
+     *            the start depth up to which the game tree will be expanded
+     * @param depthMax
+     *            the maximum depth up to which the game tree will be expanded
      * @return the best move you can play considering the other player is selecting
      *         the best move for him at each turn
-     * @throws TimeoutException
      */
-    public M best(final G game, final IMoveGenerator<M, G> generator, int depthmax) throws TimeoutException {
-        try {
-            this.depthmax = depthmax;
-            final MinMaxEvaluatedMove best = minimax(game, generator, depthmax, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, game.currentPlayer() == 0,
-                    killer);
-            killer = best;
-            return best.getMove();
-        } catch (final AlphaBetaPrunningException e) {
-            // Should never happen
-            throw new RuntimeException("evaluated move found with value not between + infinity and - infinity...");
+    public M best(final G game, final IMoveGenerator<M, G> generator, int depthStart, int depthMax) {
+    	MinMaxEvaluatedMove best = null;
+    	try {
+        	for (int depth=depthStart; depth<depthMax; depth++){
+            	try {
+                    this.depthmax = depthMax;
+                    best = minimax(game, generator, depthmax, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, game.currentPlayer() == 0, killer);
+                    killer = best;
+                } catch (final AlphaBetaPrunningException e) {
+                    // Should never happen
+                    throw new RuntimeException("evaluated move found with value not between + infinity and - infinity...");
+                }
+            }
+		} catch (TimeoutException e) {
+			//Expected, we just reach a timeout.
+		}
+        if (best==null){
+        	return null;
         }
+        return best.getMove();
     }
 
     private double scoreFromEvaluatedGame(double[] scores) {
