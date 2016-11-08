@@ -1,7 +1,8 @@
 #include "gtest/gtest.h"
 
-#include "competitive/programming/gametheory/maxntree/MaxNTree.hpp";
-#include "competitive/programming/gametheory/Common.hpp";
+#include "competitive/programming/gametheory/maxntree/MaxNTree.hpp"
+#include "competitive/programming/gametheory/minimax/Minimax.hpp"
+#include "competitive/programming/gametheory/Common.hpp"
 #include "competitive/programming/timemanagement/Timer.hpp"
 
 #include <memory>
@@ -13,6 +14,7 @@ using competitive::programming::gametheory::IMove;
 using competitive::programming::gametheory::ICancellableMove;
 using competitive::programming::gametheory::IScoreConverter;
 using competitive::programming::gametheory::maxntree::MaxNTree;
+using competitive::programming::gametheory::minimax::Minimax;
 using competitive::programming::timemanagement::Timer;
 using competitive::programming::timemanagement::TimeoutException;
 
@@ -89,14 +91,16 @@ namespace {
 
 		StickMove(): m_sticks(0), m_previousGame(), m_nextGame()
 		{}
-
-		StickMove(const StickMove& other): m_sticks(other.m_sticks), m_previousGame(), m_nextGame() {
+		StickMove(const StickMove& other): m_sticks(other.m_sticks), m_previousGame(other.m_previousGame), m_nextGame(other.m_nextGame) {
 		}
-
-		void operator=(const StickMove& other) {
+		StickMove& operator=(const StickMove& other) {
 			m_sticks = other.m_sticks;
-			m_previousGame.release();
-			m_nextGame.release();
+			m_previousGame = other.m_previousGame;
+			m_nextGame = other.m_nextGame;
+			return *this;
+		}
+		bool operator==(const StickMove& other) const {
+			return m_sticks == other.m_sticks;
 		}
 
 		StickGame& cancel(StickGame& game) {
@@ -129,8 +133,8 @@ namespace {
 		}
 	private:
 		int m_sticks;
-		std::unique_ptr<StickGame> m_previousGame;
-		std::unique_ptr<StickGame> m_nextGame;
+		std::shared_ptr<StickGame> m_previousGame;
+		std::shared_ptr<StickGame> m_nextGame;
 	};
 
 	class StickGenerator : public IMoveGenerator<StickMove, StickGame> {
@@ -157,12 +161,12 @@ namespace {
 		static void testAlgo(const std::function<StickMove (StickGame&, StickGenerator&, int)>& evaluator, bool gameStateDuplication) {
 			StickGenerator generator;
 
-			StickGame game(1, 2, gameStateDuplication);
+			StickGame game(0, 4, gameStateDuplication);
 			StickMove move(0);
 
 			try {
 				move = evaluator(game, generator, 2);
-				ASSERT_EQ(1, move.getSticks());
+				ASSERT_EQ(3, move.getSticks());
 
 				for (int player = 0; player < 2; player++) {
 					for (int sticks = 2; sticks < 10; sticks++) {
@@ -192,4 +196,13 @@ TEST(MaxNTree, StickGame) {
 	MaxNTree<StickMove, StickGame> maxNTree(timer, converter);
 
 	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return maxNTree.best(game, generator, 0, maxdepth); }, false);
+	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return maxNTree.best(game, generator, 0, maxdepth); }, true);
+}
+
+TEST(Minimax, StickGame) {
+	Timer timer;
+	Minimax<StickMove, StickGame> minimax(timer);
+
+	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return minimax.best(game, generator, 0, maxdepth); }, false);
+	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return minimax.best(game, generator, 0, maxdepth); }, true);
 }

@@ -75,10 +75,11 @@ public:
 						
 		try {
 			for (int depth = depthStart; depth<depthMax; depth++) {
-				m_best.reset(new TreeNodeWithMove<M>(bestInternal(depth, game, generator)));
+				TreeNode<M> best(bestInternal(depth, game, generator));
+				m_best.reset(new TreeNode<M>(best));
 			}
 		}
-		catch (TimeoutException& e) {
+		catch (timemanagement::TimeoutException& e) {
 			//Expected, we just reach a timeout.
 		}
 
@@ -94,20 +95,20 @@ public:
 		return m_evaluations;
 	}
 private:
-	TreeNodeWithMove<M> bestInternal(int depth, G& board, IMoveGenerator<M, G>& generator) {
+	TreeNode<M> bestInternal(int depth, G& board, IMoveGenerator<M, G>& generator) {
 		std::vector<M> generatedMoves = generator.generateMoves(board);
 		if (!generatedMoves.empty()) {
-			std::set<TreeNodeWithMove<M> > evaluatedMoves = evaluatesMoves(generatedMoves, board, depth, generator);
+			std::set<TreeNode<M> > evaluatedMoves = evaluatesMoves(generatedMoves, board, depth, generator);
 							
 			return *(evaluatedMoves.begin());
 		}
 		// Final state?
 		m_evaluations++;
-		return TreeNodeWithMove<M>(M(), board.currentPlayer(), board.evaluate(depth), depth, m_converter);
+		return TreeNode<M>(M(), board.currentPlayer(), board.evaluate(depth), depth, m_converter);
 	}
 
-	std::set<TreeNodeWithMove<M> > evaluatesMoves(std::vector<M>& generatedMoves, G& board, int depth, IMoveGenerator<M, G>& generator) {
-		std::set<TreeNodeWithMove<M> > evaluatedMoves;
+	std::set<TreeNode<M> > evaluatesMoves(std::vector<M>& generatedMoves, G& board, int depth, IMoveGenerator<M, G>& generator) {
+		std::set<TreeNode<M> > evaluatedMoves;
 
 		for (M& move : generatedMoves) {
 			m_timer.timeCheck();
@@ -115,11 +116,11 @@ private:
 
 			if (depth == 0) {
 				m_evaluations++;
-				evaluatedMoves.insert(TreeNodeWithMove<M>(move, board.currentPlayer(), board.evaluate(depth), depth, m_converter));
+				evaluatedMoves.insert(TreeNode<M>(move, board.currentPlayer(), board.evaluate(depth), depth, m_converter));
 			}
 			else {
-				TreeNodeWithMove<M> bestSubMove = bestInternal(depth - 1, board, generator);
-				evaluatedMoves.insert(TreeNodeWithMove<M>(move, board.currentPlayer(), bestSubMove.getEvaluation(), depth, m_converter));
+				TreeNode<M> bestSubMove = bestInternal(depth - 1, board, generator);
+				evaluatedMoves.insert(TreeNode<M>(move, board.currentPlayer(), bestSubMove.getEvaluation(), depth, m_converter));
 			}
 
 			board = move.cancel(board);
@@ -131,7 +132,7 @@ private:
 	IScoreConverter& m_converter;
 	timemanagement::Timer& m_timer;
 	int m_evaluations;
-	std::unique_ptr<TreeNode<M> > m_best;
+	std::shared_ptr<TreeNode<M> > m_best;
 };
 
 			}

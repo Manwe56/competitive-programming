@@ -55,7 +55,7 @@ TEST(Graph, PerformancesBFS) {
 	/*
 	* computing distances in a n*n grid starting from top left angle
 	* */
-	int n = 500;
+	int n = 50;
 
 	Timer timer;
 	timer.startTimer(100000);

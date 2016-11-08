@@ -189,7 +189,7 @@ public class Minimax<M extends ICancellableMove<G>, G extends IGame> {
     public M best(final G game, final IMoveGenerator<M, G> generator, int depthStart, int depthMax) {
     	MinMaxEvaluatedMove best = null;
     	try {
-        	for (int depth=depthStart; depth<depthMax; depth++){
+        	for (int depth=depthStart+1; depth<depthMax+1; depth++){
             	try {
                     this.depthmax = depth;
                     best = minimax(game, generator, depthmax, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, game.currentPlayer() == 0, killer);
