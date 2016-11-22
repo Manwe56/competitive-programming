@@ -2,6 +2,7 @@
 
 #include "competitive/programming/gametheory/maxntree/MaxNTree.hpp"
 #include "competitive/programming/gametheory/minimax/Minimax.hpp"
+#include "competitive/programming/gametheory/treeSearch/TreeSearch.hpp"
 #include "competitive/programming/gametheory/Common.hpp"
 #include "competitive/programming/timemanagement/Timer.hpp"
 
@@ -15,6 +16,7 @@ using competitive::programming::gametheory::ICancellableMove;
 using competitive::programming::gametheory::IScoreConverter;
 using competitive::programming::gametheory::maxntree::MaxNTree;
 using competitive::programming::gametheory::minimax::Minimax;
+using competitive::programming::gametheory::treeSearch::TreeSearch;
 using competitive::programming::timemanagement::Timer;
 using competitive::programming::timemanagement::TimeoutException;
 
@@ -124,6 +126,12 @@ namespace {
 			return game;
 		}
 
+		std::shared_ptr<StickGame> execute(std::shared_ptr<StickGame>& game) {
+			int sticksRemaining = game->getSticksRemaining() - getSticks();
+			m_nextGame.reset(new StickGame(1 - game->currentPlayer(), sticksRemaining, true));
+			return m_nextGame;
+		}
+
 		int getSticks() const {
 			return m_sticks;
 		}
@@ -205,4 +213,12 @@ TEST(Minimax, StickGame) {
 
 	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return minimax.best(game, generator, 0, maxdepth); }, false);
 	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return minimax.best(game, generator, 0, maxdepth); }, true);
+}
+
+TEST(TreeSearch, StickGame) {
+	Timer timer;
+	IScoreConverter converter = [](const std::vector<double>& rawScores, int player) {return rawScores[player]; };
+	TreeSearch<StickMove, StickGame> treeSearch(timer, 0.5, converter);
+
+	Tester::testAlgo([&](StickGame& game, StickGenerator& generator, int maxdepth) { return treeSearch.best(std::make_shared<StickGame>(game), generator); }, true);
 }

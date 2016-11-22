@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace competitive {
 	namespace programming {
@@ -54,7 +55,7 @@ namespace competitive {
 				*            the game state
 				* @return a new game state with the move applied
 				*/
-				virtual G execute(const G& game) = 0;
+				virtual std::shared_ptr<G> execute(std::shared_ptr<G>& game) = 0;
 			};
 
 			/**
