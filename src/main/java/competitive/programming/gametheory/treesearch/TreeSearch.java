@@ -141,7 +141,6 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
      *            the playing player at each turn
      * @return the best move you can play considering all players are selecting
      *         the best move for them
-     * @throws TimeoutException
      */
     public M best(final G game, final IMoveGenerator<M, G> generator) {
         toBeExpanded.clear();

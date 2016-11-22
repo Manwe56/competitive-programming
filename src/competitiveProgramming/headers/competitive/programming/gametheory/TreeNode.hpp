@@ -26,6 +26,22 @@ public:
 	TreeNode(const M& move, int currentPlayer, const std::vector<double>& evaluation, int depth, IScoreConverter& converter):
 		m_move(move), m_currentPlayer(currentPlayer), m_evaluation(evaluation), m_depth(depth), m_converter(converter) {
 	}
+	TreeNode(const TreeNode<M>& other) :
+		m_move(other.m_move),
+		m_currentPlayer(other.m_currentPlayer),
+		m_evaluation(other.m_evaluation),
+		m_depth(other.m_depth),
+		m_converter(other.m_converter)
+	{
+	}
+	TreeNode<M>& operator=(const TreeNode<M>& other) {
+		m_move = other.m_move;
+		m_currentPlayer = other.m_currentPlayer;
+		m_evaluation = other.m_evaluation;
+		m_depth = other.m_depth;
+		m_converter = other.m_converter;
+		return *this;
+	}
 
 	bool operator<(const TreeNode<M>& other) const {
 		double score = m_converter(m_evaluation, m_currentPlayer);
@@ -37,8 +53,16 @@ public:
 		return score < otherScore;
 	}
 
+	IScoreConverter& getConverter() const {
+		return m_converter;
+	}
+
 	int getDepth() const {
 		return m_depth;
+	}
+
+	void decrementDepth() {
+		m_depth--;
 	}
 
 	const std::vector<double>& getEvaluation() const {
@@ -49,9 +73,9 @@ public:
 		return m_move;
 	}
 private:
+	int m_depth;
 	M m_move;
 	std::vector<double> m_evaluation;
-	int m_depth;
 	int m_currentPlayer;
 	IScoreConverter& m_converter;
 };
