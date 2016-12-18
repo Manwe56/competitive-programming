@@ -271,7 +271,7 @@ public class FileBuilder {
         if (className == null || className.isEmpty()) {
             className = "Out";
         }
-        final String outputFile = sourceRoot + className + (javaCode ? ".java" : ".cpp");
+        final String outputFile = className + (javaCode ? ".java" : ".cpp");
 
         final List<String> lines = new ArrayList<>();
         lines.addAll(imports);
