@@ -274,6 +274,13 @@ public class FileBuilder {
         final String outputFile = className + (javaCode ? ".java" : ".cpp");
 
         final List<String> lines = new ArrayList<>();
+        if (!javaCode){
+        	//Force optimizations for C++ code
+        	lines.add("#pragma GCC optimize(\"-O3\")");
+        	lines.add("#pragma GCC optimize(\"inline\")");
+        	lines.add("#pragma GCC optimize(\"omit-frame-pointer\")");
+        	lines.add("#pragma GCC optimize(\"unroll-loops\")");
+        }
         lines.addAll(imports);
         for (final String line : treated.beforeClassContent) {
             lines.add(line);
