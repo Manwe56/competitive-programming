@@ -15,14 +15,17 @@
 #include <random>
 #include <algorithm>
 #include <functional>
-#include <vector>
+#include <list>
 #include <map>
+#include <memory>
 
 namespace competitive{
 namespace programming{
 namespace genetic{
 	template<typename Genotype>
 	class GeneticAlgorithm {
+	public:
+		typedef std::map<std::shared_ptr<Genotype>, double> GenotypeScoreMap;
 	public:
 		/**
 		* Constructor
@@ -59,7 +62,7 @@ namespace genetic{
 		* The current best genotype that has been found during the iterations
 		*/
 		Genotype best() const{
-			return m_candidates[0];
+			return *m_candidates[0];
 		}
 
 		/**
@@ -106,7 +109,7 @@ namespace genetic{
 		*	the instance to be added to the candidate list
 		*/
 		void addReference(const Genotype& reference) {
-			m_candidates.push_back(reference);
+			m_candidates.push_back(std::make_shared<Genotype>(reference));
 		}
 		/**
 		* returns the number of evaluations performed so far.
@@ -116,22 +119,22 @@ namespace genetic{
 		}
 	private:
 
-		std::map<Genotype, double> computeScores() {
-			std::map<Genotype, double> scores;
+		void computeScores() {
+			GenotypeScoreMap scores;
 
-			for (const Genotype& candidate : m_candidates) {
+			for (const std::shared_ptr<Genotype>& candidate : m_candidates) {
 				if (m_cachedScores.find(candidate)!= m_cachedScores.end()) {
 					scores[candidate] =  m_cachedScores[candidate];
 				}
 				else {
-					double score = m_fitnessFunction(candidate);
+					double score = m_fitnessFunction(*candidate);
 					m_evaluations++;
 					scores[candidate] = score;
 					m_cachedScores[candidate] = score;
 				}
 			}
-
-			return scores;
+			m_cachedScores.clear();
+			m_cachedScores = scores;
 		}
 
 		void dropUnselected(int selectionNumber) {
@@ -139,7 +142,7 @@ namespace genetic{
 		}
 		void addRandomCandidates(int initialPoolSize) {
 			for (int i = 0; i < initialPoolSize; i++) {
-				m_candidates.push_back(m_generator());
+				m_candidates.push_back(std::make_shared<Genotype>(m_generator()));
 			}
 		}
 
@@ -148,15 +151,13 @@ namespace genetic{
 				int firstIndex = (2 * i) % m_candidates.size();
 				int secondIndex = (2 * i + 1) % m_candidates.size();
 
-				m_candidates.push_back(m_merger(m_candidates[firstIndex], m_candidates[secondIndex]));
+				m_candidates.push_back(std::make_shared<Genotype>(m_merger(*m_candidates[firstIndex], *m_candidates[secondIndex])));
 			}
 		}
 
 		void mutate(int mutatedNumber) {
-			auto candidate = m_candidates.cbegin();
 			for (int i = 0; i < mutatedNumber; i++) {
-				m_candidates.push_back(m_mutator(*candidate));
-				candidate++;
+				m_candidates.push_back(std::make_shared<Genotype>(m_mutator(*m_candidates[i])));
 			}
 		}
 
@@ -166,15 +167,15 @@ namespace genetic{
 			merge(mergedNumber);
 			shuffle();
 			mutate(mutatedNumber);
-			std::map<Genotype, double> scores = computeScores();
-			sortByScore(scores);
+			computeScores();
+			sortByScore();
 			dropUnselected(selectionNumber);
-			return scores[best()];
+			return m_cachedScores[m_candidates[0]];
 		}
-		void sortByScore(const std::map<Genotype, double>& scores) {
-			std::sort(m_candidates.begin(), m_candidates.end(), [scores](const Genotype& g1, const Genotype& g2) {
-				double v1 = scores.find(g1)->second;
-				double v2 = scores.find(g2)->second;
+		void sortByScore() {
+			std::sort(m_candidates.begin(), m_candidates.end(), [&](const std::shared_ptr<Genotype>& g1, const std::shared_ptr<Genotype>& g2) {
+				double v1 = m_cachedScores.find(g1)->second;
+				double v2 = m_cachedScores.find(g2)->second;
 				
 				return v1 > v2;
 			});
@@ -187,8 +188,8 @@ namespace genetic{
 		std::function<Genotype()> m_generator;
 		std::function<Genotype(const Genotype&, const Genotype&)> m_merger;
 		std::function<Genotype(const Genotype&)> m_mutator;
-		std::map<Genotype, double> m_cachedScores;
-		std::vector<Genotype> m_candidates;
+		GenotypeScoreMap m_cachedScores;
+		std::vector<std::shared_ptr<Genotype>> m_candidates;
 		int m_evaluations;
 		std::default_random_engine m_random;
 	};
