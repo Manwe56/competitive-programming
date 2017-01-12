@@ -3,10 +3,9 @@ package competitive.programming.gametheory.treesearch;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 import competitive.programming.gametheory.IGame;
 import competitive.programming.gametheory.IMove;
@@ -50,7 +49,7 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
     private final Timer timer;
     private final double depthPenaltyFactor;
     private final TreeNodeSorter<M, G> sorter;
-    private final TreeSet<TreeSearchNode<M, G>> toBeExpanded;
+    private final PriorityQueue<TreeSearchNode<M, G>> toBeExpanded;
 	private int evaluationsPerformed;
     private int evaluationsMax = 0;
     private List<TreeSearchNode<M, G>> rootNodes;
@@ -162,7 +161,7 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
 	/**
 	 * For testing purpose
 	 * */
-    public Set<TreeSearchNode<M, G>> getToBeExpanded() {
+    protected Queue<TreeSearchNode<M, G>> getToBeExpanded() {
 		return toBeExpanded;
 	}
     
@@ -269,25 +268,8 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
 		return best.subTreeValue;
 	}
 
-	private TreeSet<TreeSearchNode<M, G>> createToBeExpanded() {
-		return new TreeSet<>(new Comparator<TreeSearchNode<M, G>>() {
-			@Override
-			public int compare(TreeSearchNode<M, G> o1, TreeSearchNode<M, G> o2) {
-			    if (o2 == o1) {
-			        return 0;
-			    }
-			    double diff = o1.eval-o2.eval;
-			    if (diff < 0) {
-		            return 1;
-		        }
-		        if (diff > 0) {
-		            return -1;
-		        }
-		        int o1hash = System.identityHashCode(o1);
-		        int o2hash = System.identityHashCode(o2);
-		        return o1hash - o2hash;
-			}
-		});
+	private PriorityQueue<TreeSearchNode<M, G>> createToBeExpanded() {
+		return new PriorityQueue<>((o1, o2)->Double.compare(o2.eval, o1.eval));
 	}
 
     private List<TreeSearchNode<M, G>> expansion(TreeSearchNode<M, G> toExpand, IMoveGenerator<M, G> generator) throws TimeoutException {
@@ -324,9 +306,8 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
 	private void treeSearchLoop(final IMoveGenerator<M, G> generator) throws TimeoutException {
 		while (!toBeExpanded.isEmpty()) {
 		    timer.timeCheck();
-		    TreeSearchNode<M, G> toExpand = selection();
+		    TreeSearchNode<M, G> toExpand = toBeExpanded.poll();
 		    List<TreeSearchNode<M, G>> expandeds = expansion(toExpand, generator);
-		    toBeExpanded.remove(toExpand);
 		    
 		    toExpand.setSubNodes(expandeds);
 		    if (!expandeds.isEmpty()){
@@ -369,10 +350,4 @@ public class TreeSearch<M extends IMove<G>, G extends IGame> {
             node.subNodes.stream().forEach(n -> printNode(n, out));
         }
     }
-
-    private TreeSearchNode<M, G> selection() {
-        return toBeExpanded.first();
-    }
-
-
 }

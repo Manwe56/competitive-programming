@@ -1,12 +1,14 @@
 package competitive.programming.gametheory.treesearch;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Queue;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
 import competitive.programming.gametheory.IGame;
 import competitive.programming.gametheory.IMove;
 import competitive.programming.gametheory.IMoveGenerator;
@@ -114,7 +116,7 @@ public class TreeSearchTest {
     	treeSearch.prun(best, generator);
     	//treeSearch.print(System.err);
     	//System.err.println("");
-    	Set<TreeSearchNode<NegValueMove, NegValueGame>> nodes = treeSearch.getToBeExpanded();
+    	Queue<TreeSearchNode<NegValueMove, NegValueGame>> nodes = treeSearch.getToBeExpanded();
     	for (TreeSearchNode<NegValueMove, NegValueGame> node : nodes){
     		assertTrue(node.getEvaluation()[0]>=17);
     	}
