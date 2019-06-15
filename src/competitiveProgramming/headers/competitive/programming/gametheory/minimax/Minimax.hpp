@@ -148,7 +148,7 @@ private:
 			child = std::shared_ptr<MinMaxEvaluatedMove<M> >(new MinMaxEvaluatedMove<M>(move, bestSubChild->getValue(), bestSubChild));
 		}
 		catch (AlphaBetaPrunningException& e) {
-			move.cancel(game);
+			move.cancel(movedGame);
 		}
 		if (child.get()) {
 			// Alpha beta prunning
@@ -156,20 +156,20 @@ private:
 				if (player) {
 					alpha = std::max(alpha, child->getValue());
 					if (beta <= alpha) {
-						move.cancel(game);
+						move.cancel(movedGame);
 						throw AlphaBetaPrunningException();
 					}
 				}
 				else {
 					beta = std::min(beta, child->getValue());
 					if (beta <= alpha) {
-						move.cancel(game);
+						move.cancel(movedGame);
 						throw AlphaBetaPrunningException();
 					}
 				}
 			}
 			moves.insert(*child.get());
-			move.cancel(game);
+			move.cancel(movedGame);
 		}
 	}
 	return moves;

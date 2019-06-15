@@ -125,7 +125,7 @@ public class Minimax<M extends ICancellableMove<G>, G extends IGame> {
                         : previousAnalysisBest.getBestSubMove());
                 child = new MinMaxEvaluatedMove(move, bestSubChild.getValue(), bestSubChild);
             } catch (final AlphaBetaPrunningException e) {
-                move.cancel(game);
+                game = move.cancel(movedGame);
             }
             if (child != null) {
                 // Alpha beta prunning
@@ -133,19 +133,19 @@ public class Minimax<M extends ICancellableMove<G>, G extends IGame> {
                     if (player) {
                         alpha = Math.max(alpha, child.getValue());
                         if (beta <= alpha) {
-                            move.cancel(game);
+                            game = move.cancel(movedGame);
                             throw new AlphaBetaPrunningException();
                         }
                     } else {
                         beta = Math.min(beta, child.getValue());
                         if (beta <= alpha) {
-                            move.cancel(game);
+                            game = move.cancel(movedGame);
                             throw new AlphaBetaPrunningException();
                         }
                     }
                 }
                 moves.add(child);
-                move.cancel(game);
+                game = move.cancel(movedGame);
             }
         }
         return moves;
